@@ -1,0 +1,229 @@
+<?php
+
+namespace App;
+
+require __DIR__ . '/vendor/autoload.php';
+
+use App\config\App;
+use App\config\Database;
+
+class run
+{
+
+
+  public function __construct($argc, $argv)
+  {
+    new App('db');
+    $result = match ($argc) {
+      1 =>   exec('php -S localhost:8080 -t public'),
+      2 => $this->methods($argv),
+      default => $this->methods($argv),
+    };
+    $result;
+  }
+  public function methods($a): void
+  {
+
+    $filename = $a[2] ?? '';
+    $filemig = '<?php
+    
+    class ' . lcfirst($filename) . '{
+        public function up()
+        {
+           return "CREATE TABLE IF NOT EXISTS  ' . $filename . ' (
+                      id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+                      username VARCHAR(50),
+                      pimg VARCHAR(50),
+                      email VARCHAR(50),
+                      password VARCHAR(50)
+           )
+           ENGINE = INNODB;";
+        }
+        public function down()
+        {
+           return  "DROP TABLE IF EXISTS  ' . $filename . ';";
+     }
+    }
+    ';
+
+
+
+    $pm = __DIR__ . "/database/Migrations/";
+
+    if ($a[1] == 'make:migration') {
+      $file = fopen($pm . date('Y_m_d_') . $a[2] . '_table.php', 'wra', true);
+
+      if ($_ENV['DB_CONNECTION'] === 'sqlite') {
+        $filemig
+          = '<?php
+                
+              class ' . lcfirst($filename) . '{
+                  public function up()
+                  {
+                    return "CREATE TABLE IF NOT EXISTS  ' . $filename . ' (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                username TEXT NOT NULL,
+                                email TEXT NOT NULL,
+                                password TEXT NOT NULL
+                    );";
+                  }
+                  public function down()
+                  {
+                    return  "DROP TABLE IF EXISTS  ' . $filename . ';";
+              }
+              } 
+  ';
+        if (fwrite($file, $filemig)) {
+
+
+          PHP_EOL;
+          echo "[" . date("Y-m-d H:i:s") . "] - " . date('Y_m_d_') . $a[2] . '_table.php ' . " migration created successfully @   " . $pm . date('Y_m_d_') . $a[2] . '_table.php' . PHP_EOL;
+        }
+        fclose($file);
+        return;
+      } else {
+        if (fwrite($file, $filemig)) {
+
+          PHP_EOL;
+          echo "[" . date("Y-m-d H:i:s") . "] - " . date('Y_m_d_') . $a[2] . '_table.php ' . " migration created successfully @   " . $pm . date('Y_m_d_') . $a[2] . '_table.php' . PHP_EOL;
+        }
+        fclose($file);
+        return;
+      }
+      // add EOF TO THE END OF THE FILE AND ECHO THE FILE
+
+    }
+    $pm = __DIR__ . "/app/Http/Models/";
+    $filemig =
+      '<?php
+namespace App\App\models;
+
+use App\config\Model;
+class ' . ucfirst($filename) . ' extends Model 
+{
+  
+
+    public static function tableName(): string
+    {
+        return "' . $filename . 's";
+    }
+    public function rules(): array
+    {
+        return [
+          "' . $filename . '"=> [self::RULE_REQUIRED],
+        ];
+    }
+    public function attrs(): array
+    {
+        return [
+           
+
+        ];
+    }
+      
+}
+';
+    if ($a[1] == 'make:model') {
+      $file = fopen($pm . $a[2] . '.php', 'wra', true);
+      if (fwrite($file, $filemig)) {
+
+        PHP_EOL;
+        echo  " model created successfully  @ " . $pm . date('Y_m_d_') . $a[2] . '.php'   . PHP_EOL;
+      }
+      fclose($file);
+      return;
+
+      // add EOF TO THE END OF THE FILE AND ECHO THE FILE
+
+    }
+
+
+
+    $pm = __DIR__ . "/app/Http/Controllers/";
+    $filemig =
+      '<?php
+namespace App\app\Http\Controllers;
+use App\config\Controller;
+use App\config\Route;
+use App\config\Request;
+
+class ' . ucfirst($filename) . ' extends Controller 
+{
+
+
+    #[Route("GET", "/")]
+    public function index()
+    {
+        App::$app->view("index");
+    }
+ 
+}
+
+';
+    if ($a[1] == 'make:controller') {
+      $file = fopen($pm . $a[2] . '.php', 'wra', true);
+      if (fwrite($file, $filemig)) {
+
+        PHP_EOL;
+        echo  "Controller created successfully  @ " . $pm . date('Y_m_d_') . $a[2] . '.php'   . PHP_EOL;
+      }
+      fclose($file);
+      return;
+
+      // add EOF TO THE END OF THE FILE AND ECHO THE FILE
+
+    }
+
+    if ($a[1] == 'css') {
+      exec('
+      npx tailwindcss -i ./public/assets/input.css -o ./public/assets/styles.css --watch');
+    }
+    if ($a[1] == 'runw') {
+      exec('
+       npx tailwindcss -i ./public/assets/input.css -o ./public/assets/output.css --watch > /dev/null 2>&1 &  php -S localhost:8080');
+    }
+    if ($a[1] == 'storage') {
+      $storagePath = __DIR__ . '/storage/public';
+      $publicPath = __DIR__ . '/public/storage';
+
+      // Ensure target public/storage folder exists
+      if (!is_dir($publicPath)) {
+        mkdir($publicPath, 0755, true);
+      }
+
+      $files = scandir($storagePath);
+      foreach ($files as $file) {
+        if ($file === '.' || $file === '..') continue;
+
+        $source = $storagePath . '/' . $file;
+        $link = $publicPath . '/' . $file;
+
+        // Skip if symlink already exists
+        if (file_exists($link)) {
+          echo "Skipped: $link already exists\n";
+          continue;
+        }
+
+        // Create symlink
+        if (symlink($source, $link)) {
+          echo "Linked: $link -> $source\n";
+        } else {
+          echo "Failed to link: $link\n";
+        }
+      }
+    }
+
+
+
+    if ($a[1] == 'migration') {
+      $app = new App('db');
+      $app->db::applyMigrations('up');
+      return;
+
+      // new App::$app->db->applyMigrations('up');
+    }
+  }
+  // $referrer = Customer::where('phone_number', $referredByPhone)->first();
+
+}
+new run($argc, $argv);

@@ -1,0 +1,5 @@
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/css application/javascript application/x-javascript text/javascript
+</IfModule>
+
+gzip htaccess
