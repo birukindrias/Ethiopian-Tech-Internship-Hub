@@ -17,7 +17,7 @@ abstract class Model
         $this->updated_at = date('Y-m-d H:i:s');
     }
     public  array $fillable = [];
-    public static String $table = '';
+    public static $table = '';
 
     public function save($array): bool
     {
@@ -95,7 +95,9 @@ abstract class Model
         if (!$array) {
             $columns = $this->fillable;
         }
+
         var_dump($this->fillable);
+
         $placeholders = array_map(fn($col) => ":$col", $array);
         $sql = "INSERT INTO $table (" . implode(',', $array) . ") VALUES (" . implode(',', $placeholders) . ")";
         var_dump($sql);
@@ -127,6 +129,16 @@ abstract class Model
     public static function get(): array
     {
         $table = static::$table;
+var_dump($table);
+        $stmt = App::$app->db->prepare("SELECT * FROM $table");
+        $stmt->execute();
+        // var_dump(array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC)));
+        return array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+    public static function gets(): array
+    {
+        $table = static::$table;
+
         $stmt = App::$app->db->prepare("SELECT * FROM $table");
         $stmt->execute();
         return array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));

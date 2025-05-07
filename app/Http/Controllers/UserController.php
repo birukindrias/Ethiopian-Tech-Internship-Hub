@@ -10,7 +10,7 @@ use App\config\Route;
 
 class UserController extends Controller
 {   
-    #[Route('GET', '/')]
+    // #[Route('GET', '/')]
     public function index()
     {
         App::$app->view('index');

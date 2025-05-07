@@ -1,6 +1,7 @@
 <?php
 namespace App\app\Http\Controllers;
 
+use App\app\Http\Models\Internship;
 use App\config\App;
 use App\config\Controller;
 use App\config\Route;
@@ -13,7 +14,8 @@ class InternshipController extends Controller
     #[Route("GET", "/")]
     public function index()
     {
-        App::$app->view("index");
+        $internship = new Internship();
+        App::$app->view("index",['internships' => $internship->get()]);
     }
  
 }

@@ -30,10 +30,10 @@ class App
         } else {
 
             $this->env();
+            $this->db = new Database();
 
             $this->router();
 
-            $this->db = new Database();
         }
     } catch (\Throwable $e) {
         http_response_code(500);
@@ -97,15 +97,15 @@ class App
    public  function view($page, $data = [] ?? null)
     {
 
-
+     
         if (file_exists(dirname(__DIR__) . '/resources/views/' . $page . '.php')) {
             // echo 'yes';
             // exit;
             // function render_view($viewFile) {
               
             // }
-            
-            echo str_replace('{content}', $this->getPage($page), $this->getLayout()); // PHP is executed ✅
+         
+            echo str_replace('{content}', $this->getPage($page,$data), $this->getLayout()); // PHP is executed ✅
             return;
         } else {
            echo  $this->view('404');
@@ -118,9 +118,11 @@ class App
         include_once dirname(__DIR__) . '/resources/views/layout/' . $this->layout . '.php';
         return ob_get_clean();
     }
-    public function getPage($page)
+    public function getPage($page,$data)
     {
-       
+        foreach ($data as $key => $value) {
+            $$key = $value;
+        }
         $viewPath = dirname(__DIR__) . '/resources/views/' . $page . '.php';
 
         if (!file_exists($viewPath)) {

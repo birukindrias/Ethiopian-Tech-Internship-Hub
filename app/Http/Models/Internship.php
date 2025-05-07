@@ -1,6 +1,6 @@
 <?php
 
-namespace App\App\models;
+namespace App\app\Http\Models;
 
 use App\config\Model;
 use App\config\App;
@@ -8,7 +8,8 @@ use App\config\App;
 class Internship extends Model
 {
 
-    public $fillable = [
+    public static $table = 'companies';
+    public array  $fillable = [
         'timestamp',
         'name',
         'website',
@@ -30,10 +31,10 @@ class Internship extends Model
         'fullTimePossibility',
     ];
 
-    public static function tableName(): string
-    {
-        return "internships";
-    }
+    // public static function table()
+    // {
+    //     return 'internship';
+    // }
     
 
     
