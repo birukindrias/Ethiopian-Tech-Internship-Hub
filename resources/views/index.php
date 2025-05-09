@@ -6,7 +6,7 @@
 
     // Safely convert PHP array to JavaScript
     echo '<script>';
-    echo 'const companies = ' . json_encode($internships, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';';
+    echo 'const companies = ' . json_encode($internships, flags: JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';';
     echo '</script>';
     ?>
     
@@ -84,13 +84,14 @@
 
     function getIconClass(stack) {
       return iconMap[stack.toLowerCase()] || iconMap.default;
-    }      console.log(companies);
+    }      
+    // console.log(companies);
         
-async function loadCompanies() {
-    const response = await fetch('get_internships.php?action=read');
-    companies = await response.json();
+    async function loadCompanies() {
+    // const response = await fetch('get_internships.php?action=read');
+    // companies = await response.json();
     console.log(companies); // Now companies[] has the full data!
-    renderCompanies(companies); // <<< call render here after data is ready
+    // renderCompanies(companies); // <<< call render here after data is ready
 }
 
 
