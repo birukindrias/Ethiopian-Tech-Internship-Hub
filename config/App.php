@@ -19,96 +19,193 @@ class App
     {
         try {
             //code...
-     
-        self::$app = $this;
 
-       
-        if ($an === 'db') {
-            $this->env();
-            $this->db = new Database();
-            return;
-        } else {
+            self::$app = $this;
 
-            $this->env();
-            $this->db = new Database();
 
-            $this->router();
+            if ($an === 'db') {
+                $this->env();
+                $this->db = new Database();
+                return;
+            } else {
 
+                $this->env();
+                $this->db = new Database();
+
+                $this->router();
+            }
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo "ControllerERROR: " . $e->getMessage();
+            exit;
         }
-    } catch (\Throwable $e) {
-        http_response_code(500);
-        echo "ControllerERROR: " . $e->getMessage();
-        exit;
-    }
     }
     public function router()
-    {
+{
+    $routes = [];
 
+    // 1. Set your controller folder and base namespace
+    $controllerDir = __DIR__ . '/../app/Http/Controllers';
+    $baseNamespace = 'App\\app\\Http\\Controllers\\';
 
+    // 2. Scan all PHP files in the controller folder
+    $controllerFiles = glob("$controllerDir/*.php");
 
-        $routes = [];
+    foreach ($controllerFiles as $file) {
+        require_once $file;
 
-        // 1. Set your controller folder and base namespace
-        $controllerDir = __DIR__ . '/../app/Http/Controllers';
-        $baseNamespace = 'App\\app\\Http\\Controllers\\';
+        $className = $baseNamespace . basename($file, '.php');
 
-        // 2. Scan all PHP files in the controller folder
-        $controllerFiles = glob("$controllerDir/*.php");
+        if (!class_exists($className)) continue;
 
-        foreach ($controllerFiles as $file) {
-            require_once $file;
+        $ref = new ReflectionClass($className);
 
-            $className = $baseNamespace . basename($file, '.php');
-
-            if (!class_exists($className)) continue;
-
-            $ref = new ReflectionClass($className);
-
-            foreach ($ref->getMethods() as $method) {
-                foreach ($method->getAttributes(Route::class) as $attr) {
-                    $route = $attr->newInstance();
-                    $key = "{$route->method}:{$route->path}";
-                    $routes[$key] = [$className, $method->getName()];
-                }
+        foreach ($ref->getMethods() as $method) {
+            foreach ($method->getAttributes(Route::class) as $attr) {
+                $route = $attr->newInstance();
+                $key = "{$route->method}:{$route->path}";
+                $routes[$key] = [$className, $method->getName()];
             }
-        }
-
-        $method = $_SERVER['REQUEST_METHOD'];
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $key = "$method:$uri";
-
-        if (isset($routes[$key])) {
-            [$class, $methodName] = $routes[$key];
-         
-            try {
-                $controller = new $class();
-                $controller = new $class();
-                echo $controller->$methodName();
-            } catch (\Throwable $e) {
-                http_response_code(500);
-                echo "Controller instantiation failed: " . $e->getMessage();
-                exit;
-            }
-        } else {
-            http_response_code(404);
-            return $this->view('404');
         }
     }
-   public  function view($page, $data = [] ?? null)
+
+    $method = $_SERVER['REQUEST_METHOD'];
+    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $key = "$method:$uri";
+
+    if (isset($routes[$key])) {
+        [$class, $methodName] = $routes[$key];
+
+        try {
+            $controller = new $class();
+
+            // Inject parameters
+            $refMethod = new \ReflectionMethod($class, $methodName);
+            $params = $refMethod->getParameters();
+
+            $dependencies = [];
+
+            foreach ($params as $param) {
+                $type = $param->getType();
+                if ($type && !$type->isBuiltin()) {
+                    $dependencies[] = $this->resolve($type->getName());
+                } else {
+                    // You could throw or set null/default here
+                    $dependencies[] = null;
+                }
+            }
+
+            echo $refMethod->invokeArgs($controller, $dependencies);
+
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo "Routing failed: " . $e->getMessage();
+            exit;
+        }
+    } else {
+        http_response_code(404);
+        return $this->view('404');
+    }
+}
+
+    // public function router()
+    // {
+
+
+
+    //     $routes = [];
+
+    //     // 1. Set your controller folder and base namespace
+    //     $controllerDir = __DIR__ . '/../app/Http/Controllers';
+    //     $baseNamespace = 'App\\app\\Http\\Controllers\\';
+
+    //     // 2. Scan all PHP files in the controller folder
+    //     $controllerFiles = glob("$controllerDir/*.php");
+
+    //     foreach ($controllerFiles as $file) {
+    //         require_once $file;
+
+    //         $className = $baseNamespace . basename($file, '.php');
+
+    //         if (!class_exists($className)) continue;
+
+    //         $ref = new ReflectionClass($className);
+
+    //         foreach ($ref->getMethods() as $method) {
+    //             foreach ($method->getAttributes(Route::class) as $attr) {
+    //                 $route = $attr->newInstance();
+    //                 $key = "{$route->method}:{$route->path}";
+    //                 $routes[$key] = [$className, $method->getName()];
+    //             }
+    //         }
+    //     }
+
+    //     $method = $_SERVER['REQUEST_METHOD'];
+    //     $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    //     $key = "$method:$uri";
+
+    //     if (isset($routes[$key])) {
+    //         [$class, $methodName] = $routes[$key];
+
+    //         try {
+    //             $controller = new $class();
+    //             $controller = new $class();
+    //             echo $controller->$methodName();
+    //         } catch (\Throwable $e) {
+    //             http_response_code(500);
+    //             echo "Controller instantiation failed: " . $e->getMessage();
+    //             exit;
+    //         }
+    //     } else {
+    //         http_response_code(404);
+    //         return $this->view('404');
+    //     }
+    // }
+
+
+    private function resolve(string $class)
+    {
+        $reflection = new ReflectionClass($class);
+
+        if (!$reflection->isInstantiable()) {
+            throw new Exception("Class {$class} is not instantiable.");
+        }
+
+        $constructor = $reflection->getConstructor();
+
+        if (!$constructor) {
+            return new $class;
+        }
+
+        $params = $constructor->getParameters();
+        $dependencies = [];
+
+        foreach ($params as $param) {
+            $type = $param->getType();
+            if (!$type || $type->isBuiltin()) {
+                throw new Exception("Cannot resolve parameter {$param->name}");
+            }
+            $dependencies[] = $this->resolve($type->getName());
+        }
+
+        return $reflection->newInstanceArgs($dependencies);
+    }
+
+    public  function view($page, $data = [] ?? null)
     {
 
-     
+
         if (file_exists(dirname(__DIR__) . '/resources/views/' . $page . '.php')) {
             // echo 'yes';
             // exit;
             // function render_view($viewFile) {
-              
+
             // }
-         
-            echo str_replace('{content}', $this->getPage($page,$data), $this->getLayout()); // PHP is executed ✅
+
+            echo str_replace('{content}', $this->getPage($page, $data), $this->getLayout()); // PHP is executed ✅
             return;
         } else {
-           echo  $this->view('404');
+            echo  $this->view('404');
             return;
         }
     }
@@ -118,7 +215,7 @@ class App
         include_once dirname(__DIR__) . '/resources/views/layout/' . $this->layout . '.php';
         return ob_get_clean();
     }
-    public function getPage($page,$data)
+    public function getPage($page, $data)
     {
         foreach ($data as $key => $value) {
             $$key = $value;
@@ -128,14 +225,14 @@ class App
         if (!file_exists($viewPath)) {
             return false;
         }
-    
+
         $content = file_get_contents($viewPath);
-    
+
         $content = preg_replace_callback('/@import\(\'(.*?)\'\)/', function ($matches) {
             $includeFile = dirname(__DIR__) . '/resources/views/' . $matches[1];
             return file_exists($includeFile) ? file_get_contents($includeFile) : " File not found: {$matches[1]}";
         }, $content);
-    
+
         ob_start();
         eval("?>$content");
         return ob_get_clean();

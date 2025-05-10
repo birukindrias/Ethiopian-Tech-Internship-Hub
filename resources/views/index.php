@@ -2,7 +2,7 @@
 <div class="bg-gradient-to-r from-gray-50 to-blue-100 min-h-screen">
 <?php
     // Dump it in browser for PHP debug (optional)
-    // var_dump($internships);
+    var_dump($internships);
 
     // Safely convert PHP array to JavaScript
     echo '<script>';

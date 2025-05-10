@@ -12,10 +12,11 @@ class InternshipController extends Controller
 
 
     #[Route("GET", "/")]
-    public function index()
+    public function index(Request $request)
     {
         $internship = new Internship();
-        App::$app->view("index",['internships' => $internship->get()]);
+        redirect('/store',['msg'=>"Internship created successfully"]);
+        view("index",['internships' => $request->get('name')]);
     }
  
 }

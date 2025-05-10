@@ -21,32 +21,36 @@ abstract class Model
 
     public function save($array): bool
     {
-        $table = static::$table;
+        try {
+            $table = static::$table;
 
-        $columns = [];
-        $placeholders = [];
+            $columns = [];
+            $placeholders = [];
 
-        foreach ($array as $key => $value) {
-            $columns[] = "`$key`";
-            $placeholders[] = ":$key";
+            foreach ($array as $key => $value) {
+                $columns[] = "`$key`";
+                $placeholders[] = ":$key";
+            }
+
+            if (empty($columns)) return false;
+
+            $sql = "INSERT INTO {$table} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
+
+            // Debugging
+            var_dump($sql);
+
+            $app = new App('db'); // assuming this returns db object with ->prepare()
+
+            $stmt = $app->db->prepare($sql);
+
+            foreach ($array as $key => $value) {
+                $stmt->bindValue(":$key", $value);
+            }
+            var_dump($stmt);
+            return $stmt->execute();
+        } catch (\Throwable $th) {
+            throw $th;
         }
-
-        if (empty($columns)) return false;
-
-        $sql = "INSERT INTO {$table} (" . implode(',', $columns) . ") VALUES (" . implode(',', $placeholders) . ")";
-
-        // Debugging
-        var_dump($sql);
-
-        $app = new App('db'); // assuming this returns db object with ->prepare()
-
-        $stmt = $app->db->prepare($sql);
-
-        foreach ($array as $key => $value) {
-            $stmt->bindValue(":$key", $value);
-        }
-        var_dump($stmt);
-        return $stmt->execute();
     }
 
     public function savse($array): bool
@@ -129,7 +133,7 @@ abstract class Model
     public static function get(): array
     {
         $table = static::$table;
-var_dump($table);
+        var_dump($table);
         $stmt = App::$app->db->prepare("SELECT * FROM $table");
         $stmt->execute();
         // var_dump(array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC)));

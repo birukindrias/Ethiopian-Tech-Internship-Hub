@@ -9,44 +9,51 @@ use App\config\Request;
 use App\config\Route;
 
 class UserController extends Controller
-{   
+{
     // #[Route('GET', '/')]
     public function index()
     {
-        App::$app->view('index');
+        view('index');
     }
     #[Route('GET', '/create')]
 
     public function create()
     {
-        App::$app->view('users/create');
+        view('users/create');
     }
-    #[Route('POST', '/store')]
+    #[Route('GET', '/store')]
 
-    public function store()
+    public function store(Request $request)
     {
-        $request = new Request(); 
+        var_dump($request->get('name'));
+        $data = $request->validate([
+            'name' => 'required|max:255|string',
+            // 'email' => 'required|email|max:255|unique:users,email',
+            // 'password' => 'required|min:8|max:255|string',
+            // 'password_confirmation' => 'required|min:8|max:255|string',
+        ]);
+
         $user = new User();
-        // $data = validate([
-        //     $request->name => 'required|max:255',
-        // ])
-//         $user->save(['name'=> $request->get('name')]);
-$user->save(['name' =>  $request->get('name')]);
-//         ->with('success','created acc')
-        return $this->redirect('/');
+        $user->save($data);
+        //         $user->save(['name'=> $request->get('name')]);
+        $user->save(['name' =>  $request->get('name')]);
+        view('users/create');
+
+        //         ->with('success','created acc')
+        // return $this->redirect('/');
     }
-    
+
 
     #[Route('GET', '/edit')]
- 
+
 
     public function edit()
     {
-        App::$app->view('users/create');
+        view('users/create');
     }
     #[Route('GET', '/api/')]
     public function api()
     {
-        App::$app->view('index');
+        view('index');
     }
 }

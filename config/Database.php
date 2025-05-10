@@ -135,4 +135,38 @@ class Database
     {
         echo "[" . date("Y-m-d H:i:s") . "] - " . $message . PHP_EOL;
     }
+
+    protected string $table = '';
+    protected array $wheres = [];
+
+    public static function table(string $table): static
+    {
+        $instance = new static();
+        $instance->table = $table;
+        return $instance;
+    }
+
+    public function where(string $column, $value): static
+    {
+        $this->wheres[] = [$column, '=', $value];
+        return $this;
+    }
+
+    public function exists(): bool
+    {
+        /** @var PDO $pdo */
+        $pdo = Database::$db->pdo;
+
+        $sql = "SELECT 1 FROM {$this->table}";
+
+        if (!empty($this->wheres)) {
+            $conditions = array_map(fn($w) => "{$w[0]} {$w[1]} ?", $this->wheres);
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_column($this->wheres, 2));
+
+        return (bool) $stmt->fetchColumn();
+    }
 }
